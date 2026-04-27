@@ -1,0 +1,1801 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Subtitle Converter — ASS · SSA · SMI · VTT · SRT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8710086844778921" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --surface-2: #f5f5f4;
+    --border: #e7e5e4;
+    --border-strong: #d6d3d1;
+    --text: #1c1917;
+    --text-2: #57534e;
+    --text-3: #a8a29e;
+    --accent: #1c1917;
+    --accent-fg: #fafaf9;
+    --ok: #15803d;
+    --warn: #b45309;
+    --err: #b91c1c;
+    --focus: #0a0a0a;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 1px 1px rgba(0,0,0,.02);
+    --radius: 6px;
+  }
+  [data-theme="dark"] {
+    --bg: #0c0a09;
+    --surface: #14110f;
+    --surface-2: #1c1917;
+    --border: #292524;
+    --border-strong: #3a3633;
+    --text: #f5f5f4;
+    --text-2: #a8a29e;
+    --text-3: #78716c;
+    --accent: #f5f5f4;
+    --accent-fg: #0c0a09;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --err: #f87171;
+    --focus: #fafaf9;
+    --shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    min-height: 100vh;
+    transition: background-color .15s ease, color .15s ease;
+  }
+  .mono { font-family: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace; }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+  }
+  .brand-mark {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    display: grid;
+    place-items: center;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .brand small {
+    color: var(--text-3);
+    font-weight: 400;
+    margin-left: 6px;
+    font-size: 12px;
+  }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .privacy-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-2);
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+  }
+  .privacy-pill .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent);
+  }
+
+  main {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .hero {
+    padding: 8px 0 20px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .hero h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .hero p {
+    margin: 6px 0 0;
+    color: var(--text-2);
+    font-size: 14px;
+    max-width: 60ch;
+  }
+  .hero .formats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .fmt-tag {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    padding: 3px 7px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-2);
+    background: var(--surface);
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 18px;
+    align-items: center;
+  }
+  .control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .control label {
+    font-size: 12px;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  select, input[type="number"], input[type="text"] {
+    font: inherit;
+    font-size: 13px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: 5px;
+    padding: 5px 8px;
+    outline: none;
+    transition: border-color .12s ease, box-shadow .12s ease;
+  }
+  select:focus, input:focus, textarea:focus, button:focus-visible {
+    border-color: var(--focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 12%, transparent);
+  }
+  input[type="number"] { width: 80px; }
+
+  .checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-2);
+    cursor: pointer;
+    user-select: none;
+  }
+  .checkbox input { accent-color: var(--accent); }
+
+  .btn {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 5px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: background-color .12s ease, border-color .12s ease, transform .08s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn:active { transform: translateY(0.5px); }
+  .btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+  .btn.primary {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
+  }
+  .btn.primary:hover { background: color-mix(in srgb, var(--accent) 90%, var(--bg)); }
+  .btn.ghost { border-color: transparent; background: transparent; }
+  .btn.ghost:hover { background: var(--surface-2); }
+  .btn .icn { width: 14px; height: 14px; }
+
+  /* Workspace grid */
+  .workspace {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 920px) {
+    .workspace { grid-template-columns: 1fr; }
+  }
+
+  /* File list */
+  .files-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    min-height: 480px;
+    max-height: calc(100vh - 240px);
+  }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  .panel-head .count {
+    font-family: 'Geist Mono', monospace;
+    color: var(--text-3);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .dropzone {
+    flex: 1;
+    margin: 12px;
+    border: 1.5px dashed var(--border-strong);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: border-color .15s ease, background-color .15s ease, color .15s ease;
+    gap: 8px;
+  }
+  .dropzone:hover { border-color: var(--text-3); background: var(--surface-2); }
+  .dropzone.drag {
+    border-color: var(--focus);
+    background: color-mix(in srgb, var(--focus) 6%, transparent);
+    color: var(--text);
+  }
+  .dropzone .icn-lg {
+    width: 32px; height: 32px;
+    color: var(--text-3);
+    margin-bottom: 4px;
+  }
+  .dropzone strong {
+    color: var(--text);
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .dropzone .hint {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .dropzone .or {
+    font-size: 11px;
+    color: var(--text-3);
+    margin: 4px 0;
+  }
+
+  .file-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 4px;
+  }
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    margin-bottom: 2px;
+  }
+  .file-item:hover { background: var(--surface-2); }
+  .file-item.active {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+  .file-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    display: grid;
+    place-items: center;
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-2);
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  .file-item.active .file-icon {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
+  }
+  .file-meta {
+    flex: 1;
+    min-width: 0;
+  }
+  .file-name {
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+  }
+  .file-sub {
+    font-size: 11px;
+    color: var(--text-3);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 1px;
+  }
+  .file-sub .arrow { color: var(--text-3); }
+  .file-status {
+    font-size: 10px;
+    font-family: 'Geist Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .file-status.ok { color: var(--ok); }
+  .file-status.err { color: var(--err); }
+  .file-status.warn { color: var(--warn); }
+  .file-remove {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    transition: opacity .1s ease, background-color .1s ease;
+  }
+  .file-item:hover .file-remove { opacity: 1; }
+  .file-remove:hover { background: var(--border); color: var(--text); }
+
+  .panel-foot {
+    border-top: 1px solid var(--border);
+    padding: 10px 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Editor area */
+  .editor {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    min-height: 480px;
+    max-height: calc(100vh - 240px);
+    overflow: hidden;
+  }
+  .editor-tabs {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-right: 1px solid var(--border);
+  }
+  .tab:last-child { border-right: none; }
+  .tab .tab-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tab-format {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--text-2);
+    border: 1px solid var(--border);
+    text-transform: uppercase;
+  }
+  .tab-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .panes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex: 1;
+    overflow: hidden;
+  }
+  @media (max-width: 760px) {
+    .panes { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  }
+  .pane {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+  .pane:last-child { border-right: none; }
+
+  textarea.code, pre.code {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    border: none;
+    outline: none;
+    background: var(--surface);
+    color: var(--text);
+    padding: 14px 16px;
+    resize: none;
+    width: 100%;
+    flex: 1;
+    overflow: auto;
+    margin: 0;
+    white-space: pre;
+    tab-size: 2;
+  }
+  pre.code { white-space: pre; }
+  .pane.empty {
+    display: grid;
+    place-items: center;
+    color: var(--text-3);
+    font-size: 13px;
+    padding: 20px;
+    text-align: center;
+  }
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    max-width: 280px;
+  }
+  .empty-state .icn-lg {
+    width: 28px;
+    height: 28px;
+    color: var(--text-3);
+    opacity: 0.7;
+  }
+
+  .pane-foot {
+    border-top: 1px solid var(--border);
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-3);
+    background: var(--surface-2);
+    font-family: 'Geist Mono', monospace;
+    min-height: 30px;
+  }
+  .pane-foot .left, .pane-foot .right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pane-foot .stat strong { color: var(--text-2); font-weight: 500; }
+
+  /* Privacy banner */
+  .privacy-banner {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 12.5px;
+    color: var(--text-2);
+    line-height: 1.55;
+  }
+  .privacy-banner .icn-lg {
+    width: 18px; height: 18px;
+    color: var(--ok);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .privacy-banner strong { color: var(--text); font-weight: 600; }
+
+  /* Toast */
+  .toast-stack {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 100;
+  }
+  .toast {
+    background: var(--text);
+    color: var(--bg);
+    padding: 9px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.18);
+    animation: slideIn .2s ease-out;
+    max-width: 320px;
+  }
+  @keyframes slideIn {
+    from { transform: translateY(8px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  /* tiny icon button */
+  .icnbtn {
+    width: 26px; height: 26px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+  }
+  .icnbtn:hover { background: var(--surface); color: var(--text); }
+  .icnbtn .icn { width: 14px; height: 14px; }
+
+  ::selection { background: color-mix(in srgb, var(--focus) 22%, transparent); }
+
+  /* Ad containers */
+  .ad-unit {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  .ad-unit ins {
+    display: block;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .ad-unit-hero {
+    padding-top: 0;
+    padding-bottom: 14px;
+  }
+  .ad-unit-footer {
+    padding-top: 14px;
+    padding-bottom: 24px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">S</div>
+    <span>Subtitle Converter</span>
+    <small>v1.0</small>
+  </div>
+  <div class="header-actions">
+    <span class="privacy-pill" title="Files never leave your device">
+      <span class="dot"></span>
+      100% in-browser
+    </span>
+    <button class="icnbtn" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">
+      <svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div>
+      <h1>Convert subtitles, locally.</h1>
+      <p>Drop in <span class="mono">.ass</span>, <span class="mono">.ssa</span>, <span class="mono">.smi</span>, <span class="mono">.vtt</span> or <span class="mono">.srt</span> files — pick a target format, tweak the timing, and download. Nothing is uploaded.</p>
+    </div>
+    <div class="formats">
+      <span class="fmt-tag">ASS → SRT</span>
+      <span class="fmt-tag">SSA → SRT</span>
+      <span class="fmt-tag">SMI → SRT</span>
+      <span class="fmt-tag">VTT → SRT</span>
+      <span class="fmt-tag">SRT → VTT</span>
+      <span class="fmt-tag">SRT → ASS</span>
+    </div>
+  </section>
+
+  <!-- Ad: below hero -->
+  <div class="ad-unit ad-unit-hero">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-8710086844778921"
+         data-ad-slot="auto"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+
+  <div class="toolbar">
+    <div class="controls">
+      <div class="control">
+        <label for="targetFormat">Convert to</label>
+        <select id="targetFormat">
+          <option value="srt">SRT</option>
+          <option value="vtt">VTT</option>
+          <option value="ass">ASS</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="encoding">Encoding</label>
+        <select id="encoding">
+          <option value="auto">Auto-detect</option>
+          <option value="utf-8">UTF-8</option>
+          <option value="utf-16le">UTF-16 LE</option>
+          <option value="utf-16be">UTF-16 BE</option>
+          <option value="windows-1252">Windows-1252</option>
+          <option value="iso-8859-1">ISO-8859-1</option>
+          <option value="windows-1250">Windows-1250 (CE)</option>
+          <option value="windows-1251">Windows-1251 (Cyrillic)</option>
+          <option value="euc-kr">EUC-KR</option>
+          <option value="shift_jis">Shift-JIS</option>
+          <option value="gb18030">GB18030</option>
+          <option value="big5">Big5</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="offset">Offset (s)</label>
+        <input type="number" id="offset" value="0" step="0.1" />
+      </div>
+      <label class="checkbox" title="Remove ASS override tags like {\an8}, font/color tags from output">
+        <input type="checkbox" id="stripStyles" checked />
+        Strip style tags
+      </label>
+      <label class="checkbox" title="Merge cues that overlap; split text when needed">
+        <input type="checkbox" id="mergeOverlap" />
+        Merge overlapping cues
+      </label>
+    </div>
+    <div class="controls">
+      <button class="btn" id="convertAllBtn" disabled>
+        <svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path><path d="M3 21v-5h5"></path></svg>
+        Convert all
+      </button>
+      <button class="btn primary" id="downloadBtn" disabled>
+        <svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Download
+      </button>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <aside class="files-panel">
+      <div class="panel-head">
+        <span>Files</span>
+        <span class="count" id="fileCount">0</span>
+      </div>
+
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" multiple accept=".srt,.ass,.ssa,.smi,.sami,.vtt,.txt" hidden />
+        <svg class="icn-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <strong>Drop subtitle files here</strong>
+        <span class="hint">.srt · .ass · .ssa · .smi · .vtt</span>
+        <span class="or">or click to browse</span>
+      </label>
+
+      <div class="file-list" id="fileList" hidden></div>
+
+      <div class="panel-foot" id="panelFoot" hidden>
+        <button class="btn ghost" id="addMoreBtn">
+          <svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add more
+        </button>
+        <button class="btn ghost" id="pasteBtn">
+          <svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
+          Paste text
+        </button>
+        <button class="btn ghost" id="clearBtn" style="margin-left:auto">
+          Clear
+        </button>
+      </div>
+    </aside>
+
+    <section class="editor">
+      <div class="editor-tabs">
+        <div class="tab">
+          <div class="tab-label">
+            <span>Source</span>
+            <span class="tab-format mono" id="sourceFmt">—</span>
+          </div>
+          <div class="tab-actions">
+            <span class="mono" id="sourceCues" style="font-size:11px;color:var(--text-3)"></span>
+          </div>
+        </div>
+        <div class="tab">
+          <div class="tab-label">
+            <span>Output</span>
+            <span class="tab-format mono" id="outputFmt">—</span>
+          </div>
+          <div class="tab-actions">
+            <button class="icnbtn" id="copyBtn" title="Copy output" disabled>
+              <svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+            <button class="icnbtn" id="downloadOneBtn" title="Download this file" disabled>
+              <svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panes">
+        <div class="pane" id="sourcePane">
+          <div class="empty-state" style="margin:auto">
+            <svg class="icn-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            <div>No file selected</div>
+            <div style="color:var(--text-3);font-size:12px">Add a subtitle file to see it here.</div>
+          </div>
+        </div>
+        <div class="pane" id="outputPane">
+          <div class="empty-state" style="margin:auto">
+            <svg class="icn-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <div>Output will appear here</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="privacy-banner">
+    <svg class="icn-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+    <div>
+      <strong>Your files stay on your device.</strong> All parsing, encoding detection, and conversion happens in your browser — nothing is uploaded to any server. Close the tab and the data is gone.
+    </div>
+  </div>
+</main>
+
+<!-- Ad: below content -->
+<div class="ad-unit ad-unit-footer">
+  <ins class="adsbygoogle"
+       style="display:block"
+       data-ad-client="ca-pub-8710086844778921"
+       data-ad-slot="auto"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<div class="toast-stack" id="toasts"></div>
+
+<script>
+/* Subtitle conversion engine.
+   Internal cue model:
+     { start: number (seconds), end: number, text: string, style?: string }
+   Parsers strip styling unless preserve flag is set; emitters write canonical output.
+*/
+(function (global) {
+  'use strict';
+
+  // ───────────────────────── helpers ─────────────────────────
+  function pad(n, w) {
+    n = Math.max(0, Math.floor(n));
+    return String(n).padStart(w, '0');
+  }
+
+  // seconds → "HH:MM:SS,mmm" (SRT) or "HH:MM:SS.mmm" (VTT) or "H:MM:SS.cc" (ASS)
+  function fmtSrt(sec) {
+    if (sec < 0) sec = 0;
+    const ms = Math.round(sec * 1000);
+    const h  = Math.floor(ms / 3600000);
+    const m  = Math.floor((ms % 3600000) / 60000);
+    const s  = Math.floor((ms % 60000) / 1000);
+    const mm = ms % 1000;
+    return `${pad(h,2)}:${pad(m,2)}:${pad(s,2)},${pad(mm,3)}`;
+  }
+  function fmtVtt(sec) {
+    return fmtSrt(sec).replace(',', '.');
+  }
+  function fmtAss(sec) {
+    if (sec < 0) sec = 0;
+    const cs = Math.round(sec * 100);
+    const h  = Math.floor(cs / 360000);
+    const m  = Math.floor((cs % 360000) / 6000);
+    const s  = Math.floor((cs % 6000) / 100);
+    const c  = cs % 100;
+    return `${h}:${pad(m,2)}:${pad(s,2)}.${pad(c,2)}`;
+  }
+
+  // Parse "HH:MM:SS,mmm" or "HH:MM:SS.mmm" → seconds
+  function parseTimecode(t) {
+    if (!t) return 0;
+    t = t.trim();
+    const m = t.match(/^(\d+):(\d{1,2}):(\d{1,2})[.,](\d{1,3})$/);
+    if (m) {
+      return (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) + (+(m[4].padEnd(3, '0'))) / 1000;
+    }
+    const m2 = t.match(/^(\d+):(\d{1,2}):(\d{1,2})$/);
+    if (m2) return (+m2[1]) * 3600 + (+m2[2]) * 60 + (+m2[3]);
+    const m3 = t.match(/^(\d+):(\d{1,2})[.,](\d{1,3})$/); // M:SS.mmm
+    if (m3) return (+m3[1]) * 60 + (+m3[2]) + (+(m3[3].padEnd(3,'0'))) / 1000;
+    return 0;
+  }
+  // ASS time "H:MM:SS.cc"
+  function parseAssTime(t) {
+    const m = String(t).trim().match(/^(\d+):(\d{1,2}):(\d{1,2})[.,](\d{1,2})$/);
+    if (!m) return 0;
+    return (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) + (+m[4]) / 100;
+  }
+
+  // ───────────────────────── format detection ─────────────────────────
+  function detectFormat(text, filename) {
+    const f = (filename || '').toLowerCase();
+    if (f.endsWith('.srt')) return 'srt';
+    if (f.endsWith('.ass')) return 'ass';
+    if (f.endsWith('.ssa')) return 'ssa';
+    if (f.endsWith('.smi') || f.endsWith('.sami')) return 'smi';
+    if (f.endsWith('.vtt')) return 'vtt';
+
+    const sample = text.slice(0, 4000).toLowerCase();
+    if (sample.includes('[script info]') || sample.includes('dialogue:')) {
+      return sample.includes('scripttype: v4.00\n') || sample.includes('script type: v4.00\n')
+        ? 'ssa' : 'ass';
+    }
+    if (sample.startsWith('webvtt') || sample.includes('webvtt')) return 'vtt';
+    if (sample.includes('<sami>') || sample.includes('<sync ')) return 'smi';
+    if (/^\s*\d+\s*\r?\n\d{1,2}:\d{2}:\d{2}[,.]/.test(text)) return 'srt';
+    return 'srt';
+  }
+
+  // ───────────────────────── parsers ─────────────────────────
+  function parseSrt(text) {
+    text = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const cues = [];
+    // Split on blank lines
+    const blocks = text.split(/\n{2,}/);
+    for (const block of blocks) {
+      const lines = block.split('\n').filter(l => l.length);
+      // Drop optional cue index on first line
+      let i = 0;
+      if (lines[0] && /^\d+$/.test(lines[0].trim())) i = 1;
+      const tcLine = lines[i];
+      if (!tcLine) continue;
+      const m = tcLine.match(/(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})/);
+      if (!m) continue;
+      const start = parseTimecode(m[1]);
+      const end   = parseTimecode(m[2]);
+      const textLines = lines.slice(i + 1).join('\n').trim();
+      if (textLines) cues.push({ start, end, text: textLines });
+    }
+    return cues;
+  }
+
+  function parseVtt(text) {
+    text = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Drop WEBVTT header
+    text = text.replace(/^WEBVTT[^\n]*\n/, '');
+    const cues = [];
+    const blocks = text.split(/\n{2,}/);
+    for (const block of blocks) {
+      // Skip NOTE / STYLE / REGION blocks
+      if (/^(NOTE|STYLE|REGION)\b/i.test(block.trim())) continue;
+      const lines = block.split('\n');
+      let tcLineIndex = lines.findIndex(l => l.includes('-->'));
+      if (tcLineIndex === -1) continue;
+      const m = lines[tcLineIndex].match(/(\d{1,2}:\d{2}:\d{2}\.\d{1,3}|\d{1,2}:\d{2}\.\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}\.\d{1,3}|\d{1,2}:\d{2}\.\d{1,3})/);
+      if (!m) continue;
+      const start = parseTimecode(m[1]);
+      const end   = parseTimecode(m[2]);
+      const textBody = lines.slice(tcLineIndex + 1).join('\n').trim();
+      if (textBody) cues.push({ start, end, text: textBody });
+    }
+    return cues;
+  }
+
+  // ASS / SSA — share a parser; emitter handles version differences.
+  function parseAss(text) {
+    text = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = text.split('\n');
+    const cues = [];
+    let format = null;
+    let inEvents = false;
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) continue;
+      if (/^\[events\]/i.test(line)) { inEvents = true; format = null; continue; }
+      if (/^\[/.test(line)) { inEvents = false; continue; }
+      if (!inEvents) continue;
+      if (/^format:/i.test(line)) {
+        format = line.replace(/^format:/i, '').split(',').map(s => s.trim().toLowerCase());
+        continue;
+      }
+      if (/^dialogue:/i.test(line)) {
+        const body = line.replace(/^dialogue:\s*/i, '');
+        // Split into n-1 commas, last field (Text) keeps any commas
+        const fields = format || ['layer','start','end','style','name','marginl','marginr','marginv','effect','text'];
+        const parts = [];
+        let rest = body;
+        for (let i = 0; i < fields.length - 1; i++) {
+          const idx = rest.indexOf(',');
+          if (idx === -1) { parts.push(rest); rest = ''; break; }
+          parts.push(rest.slice(0, idx));
+          rest = rest.slice(idx + 1);
+        }
+        parts.push(rest);
+        const get = (key) => {
+          const i = fields.indexOf(key);
+          return i >= 0 ? parts[i] : '';
+        };
+        const start = parseAssTime(get('start'));
+        const end   = parseAssTime(get('end'));
+        let txt = get('text') || '';
+        cues.push({ start, end, text: txt, style: get('style') || 'Default' });
+      }
+    }
+    return cues;
+  }
+
+  function parseSmi(text) {
+    text = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Strip HTML comments
+    text = text.replace(/<!--[\s\S]*?-->/g, '');
+
+    // Find all <SYNC Start=NN> blocks (case-insensitive)
+    const re = /<sync\s+start\s*=\s*"?(\d+)"?[^>]*>([\s\S]*?)(?=<sync\s+start|<\/body|<\/sami|$)/gi;
+    const cues = [];
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const startMs = parseInt(m[1], 10);
+      const body    = m[2];
+      // Remove optional <P ...> wrapper, keep inner content
+      let inner = body.replace(/<\/?p\b[^>]*>/gi, '').trim();
+      // &nbsp; cue end marker:
+      const stripped = stripHtml(inner).trim();
+      cues.push({ start: startMs / 1000, end: 0, text: stripped, _isEnd: stripped === '' });
+    }
+    // Build start/end pairs: each non-empty cue's end = next cue's start
+    const out = [];
+    for (let i = 0; i < cues.length; i++) {
+      const c = cues[i];
+      if (c._isEnd) continue;
+      let endTime = null;
+      for (let j = i + 1; j < cues.length; j++) {
+        if (cues[j].start > c.start) { endTime = cues[j].start; break; }
+      }
+      if (endTime == null) endTime = c.start + 3; // fallback 3s
+      out.push({ start: c.start, end: endTime, text: c.text });
+    }
+    return out;
+  }
+
+  function stripHtml(s) {
+    if (!s) return '';
+    // <br> → newline
+    s = s.replace(/<br\s*\/?>/gi, '\n');
+    // remove all other tags
+    s = s.replace(/<[^>]+>/g, '');
+    // entities
+    s = s.replace(/&nbsp;/gi, ' ')
+         .replace(/&lt;/gi, '<')
+         .replace(/&gt;/gi, '>')
+         .replace(/&amp;/gi, '&')
+         .replace(/&quot;/gi, '"')
+         .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+         .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)));
+    return s;
+  }
+
+  // ───────────────────────── post-processing ─────────────────────────
+  function stripAssTags(text) {
+    if (!text) return '';
+    // Drawing commands: {\p1}...{\p0} → drop entirely
+    text = text.replace(/\{\\p[1-9][0-9]*\}[\s\S]*?\{\\p0\}/g, '');
+    // Override blocks {\...}
+    text = text.replace(/\{[^}]*\}/g, '');
+    // \N \n → newline; \h → space
+    text = text.replace(/\\N/g, '\n').replace(/\\n/g, '\n').replace(/\\h/g, ' ');
+    return text.trim();
+  }
+
+  function applyOffset(cues, offsetSec) {
+    if (!offsetSec) return cues;
+    return cues.map(c => ({
+      ...c,
+      start: Math.max(0, c.start + offsetSec),
+      end:   Math.max(0, c.end   + offsetSec),
+    }));
+  }
+
+  // Merge cues that overlap in time (same display window).
+  function mergeOverlapping(cues) {
+    if (!cues.length) return cues;
+    const sorted = [...cues].sort((a, b) => a.start - b.start || a.end - b.end);
+    const out = [];
+    for (const c of sorted) {
+      const last = out[out.length - 1];
+      if (last && c.start < last.end - 0.001) {
+        // Overlap: extend end, join text
+        last.end = Math.max(last.end, c.end);
+        if (last.text !== c.text) last.text = last.text + '\n' + c.text;
+      } else {
+        out.push({ ...c });
+      }
+    }
+    return out;
+  }
+
+  function postProcess(cues, opts) {
+    let out = cues.map(c => ({ ...c }));
+    if (opts.stripStyles) {
+      out = out.map(c => ({ ...c, text: stripAssTags(c.text) }));
+    }
+    out = out.filter(c => c.text && c.end > c.start);
+    if (opts.offset) out = applyOffset(out, opts.offset);
+    if (opts.mergeOverlap) out = mergeOverlapping(out);
+    return out;
+  }
+
+  // ───────────────────────── emitters ─────────────────────────
+  function emitSrt(cues) {
+    return cues.map((c, i) => {
+      return `${i + 1}\n${fmtSrt(c.start)} --> ${fmtSrt(c.end)}\n${c.text}\n`;
+    }).join('\n');
+  }
+
+  function emitVtt(cues) {
+    const body = cues.map((c, i) => {
+      return `${i + 1}\n${fmtVtt(c.start)} --> ${fmtVtt(c.end)}\n${c.text}\n`;
+    }).join('\n');
+    return `WEBVTT\n\n${body}`;
+  }
+
+  function emitAss(cues) {
+    const header = [
+      '[Script Info]',
+      '; Generated by Subtitle Converter',
+      'ScriptType: v4.00+',
+      'PlayResX: 1920',
+      'PlayResY: 1080',
+      'WrapStyle: 0',
+      'ScaledBorderAndShadow: yes',
+      '',
+      '[V4+ Styles]',
+      'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
+      'Style: Default,Arial,60,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,1,2,40,40,40,1',
+      '',
+      '[Events]',
+      'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
+    ].join('\n');
+    const events = cues.map(c => {
+      const txt = (c.text || '').replace(/\r?\n/g, '\\N');
+      return `Dialogue: 0,${fmtAss(c.start)},${fmtAss(c.end)},${c.style || 'Default'},,0,0,0,,${txt}`;
+    }).join('\n');
+    return header + '\n' + events + '\n';
+  }
+
+  // ───────────────────────── public API ─────────────────────────
+  function parse(text, format) {
+    switch (format) {
+      case 'srt': return parseSrt(text);
+      case 'vtt': return parseVtt(text);
+      case 'ass':
+      case 'ssa': return parseAss(text);
+      case 'smi': return parseSmi(text);
+      default:    return parseSrt(text);
+    }
+  }
+
+  function emit(cues, format) {
+    switch (format) {
+      case 'srt': return emitSrt(cues);
+      case 'vtt': return emitVtt(cues);
+      case 'ass': return emitAss(cues);
+      default:    return emitSrt(cues);
+    }
+  }
+
+  function convert(text, sourceFormat, targetFormat, options) {
+    options = options || {};
+    const cues = parse(text, sourceFormat);
+    const processed = postProcess(cues, {
+      stripStyles: options.stripStyles !== false,
+      offset:      options.offset || 0,
+      mergeOverlap: !!options.mergeOverlap,
+    });
+    const out = emit(processed, targetFormat);
+    return { text: out, cues: processed, sourceCues: cues.length };
+  }
+
+  function targetExtension(fmt) {
+    return { srt: 'srt', vtt: 'vtt', ass: 'ass' }[fmt] || 'srt';
+  }
+
+  global.SubConv = {
+    detectFormat, parse, emit, convert,
+    fmtSrt, fmtVtt, fmtAss, parseTimecode, parseAssTime,
+    stripAssTags, mergeOverlapping, applyOffset,
+    targetExtension,
+  };
+})(window);
+
+</script>
+
+<script>
+/* Encoding detection. Tries:
+   1. BOM sniff (UTF-8, UTF-16 LE/BE)
+   2. UTF-8 validity check
+   3. Heuristic: does the byte distribution look like a known legacy charset?
+   Falls back to windows-1252.
+*/
+(function (global) {
+  'use strict';
+
+  function hasBom(bytes, sig) {
+    for (let i = 0; i < sig.length; i++) if (bytes[i] !== sig[i]) return false;
+    return true;
+  }
+
+  // Validate UTF-8 byte sequence
+  function isValidUtf8(bytes) {
+    let i = 0, weird = 0, total = 0;
+    while (i < bytes.length) {
+      const b = bytes[i];
+      total++;
+      if (b < 0x80) { i++; continue; }
+      let need = 0;
+      if      ((b & 0xE0) === 0xC0) need = 1;
+      else if ((b & 0xF0) === 0xE0) need = 2;
+      else if ((b & 0xF8) === 0xF0) need = 3;
+      else return false;
+      if (i + need >= bytes.length) return false;
+      for (let j = 1; j <= need; j++) {
+        if ((bytes[i + j] & 0xC0) !== 0x80) return false;
+      }
+      i += need + 1;
+      weird++;
+    }
+    // If purely ASCII, that's still valid utf-8
+    return true;
+  }
+
+  // Does it look like UTF-16 LE (lots of \x00 in odd positions)?
+  function looksUtf16LE(bytes) {
+    let zeros = 0;
+    const N = Math.min(bytes.length, 2000);
+    for (let i = 1; i < N; i += 2) if (bytes[i] === 0) zeros++;
+    return zeros / (N / 2) > 0.5;
+  }
+  function looksUtf16BE(bytes) {
+    let zeros = 0;
+    const N = Math.min(bytes.length, 2000);
+    for (let i = 0; i < N; i += 2) if (bytes[i] === 0) zeros++;
+    return zeros / (N / 2) > 0.5;
+  }
+
+  function detect(buffer) {
+    const bytes = new Uint8Array(buffer);
+    // BOMs
+    if (hasBom(bytes, [0xEF, 0xBB, 0xBF])) return { encoding: 'utf-8',    confidence: 'bom' };
+    if (hasBom(bytes, [0xFF, 0xFE]))       return { encoding: 'utf-16le', confidence: 'bom' };
+    if (hasBom(bytes, [0xFE, 0xFF]))       return { encoding: 'utf-16be', confidence: 'bom' };
+
+    if (looksUtf16LE(bytes)) return { encoding: 'utf-16le', confidence: 'heuristic' };
+    if (looksUtf16BE(bytes)) return { encoding: 'utf-16be', confidence: 'heuristic' };
+
+    // Pure ASCII or valid UTF-8?
+    if (isValidUtf8(bytes)) {
+      // Distinguish plain ASCII from real UTF-8 (just for label)
+      let hasHigh = false;
+      for (let i = 0; i < Math.min(bytes.length, 4000); i++) if (bytes[i] >= 0x80) { hasHigh = true; break; }
+      return { encoding: 'utf-8', confidence: hasHigh ? 'utf8-multibyte' : 'ascii' };
+    }
+
+    // Heuristic: count byte ranges to guess legacy encoding family
+    let highBytes = 0, total = bytes.length;
+    let kanaJp = 0, korean = 0, cyrillic = 0;
+    for (let i = 0; i < total; i++) {
+      const b = bytes[i];
+      if (b >= 0x80) highBytes++;
+      // Shift-JIS lead bytes: 81-9F, E0-FC followed by 40-7E or 80-FC
+      if ((b >= 0x81 && b <= 0x9F) || (b >= 0xE0 && b <= 0xFC)) {
+        const n = bytes[i+1];
+        if (n && ((n >= 0x40 && n <= 0x7E) || (n >= 0x80 && n <= 0xFC))) kanaJp++;
+      }
+      // EUC-KR / CP949 lead 81-FE w/ trail 41-FE
+      if (b >= 0x81 && b <= 0xFE) {
+        const n = bytes[i+1];
+        if (n && n >= 0x41 && n <= 0xFE) korean++;
+      }
+      // CP1251 cyrillic block C0-FF
+      if (b >= 0xC0 && b <= 0xFF) cyrillic++;
+    }
+    if (highBytes / total > 0.05) {
+      // crude scoring
+      if (korean > kanaJp && korean > cyrillic) return { encoding: 'euc-kr', confidence: 'heuristic' };
+      if (kanaJp > cyrillic)                    return { encoding: 'shift_jis', confidence: 'heuristic' };
+      if (cyrillic > 30)                        return { encoding: 'windows-1251', confidence: 'heuristic' };
+    }
+    return { encoding: 'windows-1252', confidence: 'fallback' };
+  }
+
+  function decode(buffer, encoding) {
+    try {
+      const dec = new TextDecoder(encoding, { fatal: false });
+      return dec.decode(buffer);
+    } catch (e) {
+      // Some browsers don't expose every encoding; fallback to windows-1252
+      try {
+        return new TextDecoder('windows-1252', { fatal: false }).decode(buffer);
+      } catch (e2) {
+        return new TextDecoder('utf-8', { fatal: false }).decode(buffer);
+      }
+    }
+  }
+
+  function readFileWithEncoding(file, override) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const buf = reader.result;
+        let encoding = override && override !== 'auto' ? override : detect(buf).encoding;
+        const text = decode(buf, encoding);
+        resolve({ text, encoding, detected: !override || override === 'auto' });
+      };
+      reader.onerror = () => reject(reader.error || new Error('Read error'));
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  global.Encoding = { detect, decode, readFileWithEncoding };
+})(window);
+
+</script>
+
+<script>
+/* Subtitle Converter — UI controller */
+(function () {
+  'use strict';
+
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  const state = {
+    files: [],          // { id, name, format, encoding, sourceText, output, cuesIn, cuesOut, status, error }
+    activeId: null,
+    options: {
+      target: 'srt',
+      encoding: 'auto',
+      offset: 0,
+      stripStyles: true,
+      mergeOverlap: false,
+    },
+  };
+
+  const els = {
+    drop:        $('#dropzone'),
+    input:       $('#fileInput'),
+    list:        $('#fileList'),
+    foot:        $('#panelFoot'),
+    addMore:     $('#addMoreBtn'),
+    paste:       $('#pasteBtn'),
+    clear:       $('#clearBtn'),
+    fileCount:   $('#fileCount'),
+    target:      $('#targetFormat'),
+    encoding:    $('#encoding'),
+    offset:      $('#offset'),
+    stripStyles: $('#stripStyles'),
+    mergeOverlap:$('#mergeOverlap'),
+    convertAll:  $('#convertAllBtn'),
+    download:    $('#downloadBtn'),
+    sourcePane:  $('#sourcePane'),
+    outputPane:  $('#outputPane'),
+    sourceFmt:   $('#sourceFmt'),
+    outputFmt:   $('#outputFmt'),
+    sourceCues:  $('#sourceCues'),
+    copyBtn:     $('#copyBtn'),
+    downloadOne: $('#downloadOneBtn'),
+    themeToggle: $('#themeToggle'),
+    toasts:      $('#toasts'),
+  };
+
+  // ───────────────────────── theme ─────────────────────────
+  const savedTheme = localStorage.getItem('subconv.theme');
+  const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.dataset.theme = savedTheme || (prefersDark ? 'dark' : 'light');
+  els.themeToggle.addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('subconv.theme', next);
+  });
+
+  // ───────────────────────── toasts ─────────────────────────
+  function toast(msg, ms = 2200) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    els.toasts.appendChild(el);
+    setTimeout(() => {
+      el.style.transition = 'opacity .25s ease, transform .25s ease';
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(4px)';
+      setTimeout(() => el.remove(), 260);
+    }, ms);
+  }
+
+  // ───────────────────────── ID gen ─────────────────────────
+  let idCounter = 0;
+  const nextId = () => `f_${++idCounter}`;
+
+  // ───────────────────────── file ingest ─────────────────────────
+  async function ingestFiles(fileList) {
+    const accepted = ['srt', 'ass', 'ssa', 'smi', 'sami', 'vtt', 'txt'];
+    for (const file of fileList) {
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      if (!accepted.includes(ext)) {
+        toast(`Skipped ${file.name}: unsupported file type`);
+        continue;
+      }
+      try {
+        const { text, encoding } = await Encoding.readFileWithEncoding(file, state.options.encoding);
+        const format = SubConv.detectFormat(text, file.name);
+        const item = {
+          id: nextId(),
+          name: file.name,
+          format,
+          encoding,
+          sourceText: text,
+          output: '',
+          cuesIn: 0,
+          cuesOut: 0,
+          status: 'pending',
+          error: null,
+        };
+        state.files.push(item);
+        if (!state.activeId) state.activeId = item.id;
+        convertOne(item);
+      } catch (e) {
+        toast(`Failed to read ${file.name}: ${e.message}`);
+      }
+    }
+    render();
+  }
+
+  function ingestPasted(text) {
+    const format = SubConv.detectFormat(text, '');
+    const ext = format === 'ssa' ? 'ass' : format;
+    const item = {
+      id: nextId(),
+      name: `Pasted ${state.files.filter(f => f.name.startsWith('Pasted')).length + 1}.${ext}`,
+      format,
+      encoding: 'utf-8',
+      sourceText: text,
+      output: '',
+      cuesIn: 0,
+      cuesOut: 0,
+      status: 'pending',
+      error: null,
+    };
+    state.files.push(item);
+    if (!state.activeId) state.activeId = item.id;
+    convertOne(item);
+    render();
+  }
+
+  // ───────────────────────── convert ─────────────────────────
+  function convertOne(item) {
+    try {
+      const result = SubConv.convert(item.sourceText, item.format, state.options.target, {
+        stripStyles: state.options.stripStyles,
+        offset: state.options.offset,
+        mergeOverlap: state.options.mergeOverlap,
+      });
+      item.output = result.text;
+      item.cuesIn = result.sourceCues;
+      item.cuesOut = result.cues.length;
+      item.status = result.cues.length ? 'ok' : 'warn';
+      item.error = result.cues.length ? null : 'No cues produced';
+    } catch (e) {
+      item.output = '';
+      item.status = 'err';
+      item.error = e.message;
+    }
+  }
+
+  function convertAll() {
+    state.files.forEach(convertOne);
+    render();
+    toast(`Converted ${state.files.length} file${state.files.length === 1 ? '' : 's'}`);
+  }
+
+  // ───────────────────────── drag & drop ─────────────────────────
+  ['dragenter', 'dragover'].forEach(ev => {
+    els.drop.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation();
+      els.drop.classList.add('drag');
+    });
+    document.addEventListener(ev, e => {
+      e.preventDefault();
+    });
+  });
+  ['dragleave', 'drop'].forEach(ev => {
+    els.drop.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation();
+      if (ev === 'dragleave' && e.target !== els.drop) return;
+      els.drop.classList.remove('drag');
+    });
+  });
+  els.drop.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    if (!e.dataTransfer?.files?.length) return;
+    await ingestFiles(e.dataTransfer.files);
+  });
+  // Whole-window drop (so accidental drops outside the zone still work)
+  window.addEventListener('drop', async (e) => {
+    if (e.target.closest('#dropzone')) return; // already handled
+    if (!e.dataTransfer?.files?.length) return;
+    e.preventDefault();
+    await ingestFiles(e.dataTransfer.files);
+  });
+
+  els.input.addEventListener('change', async e => {
+    if (e.target.files?.length) {
+      await ingestFiles(e.target.files);
+      e.target.value = '';
+    }
+  });
+  els.addMore.addEventListener('click', () => els.input.click());
+
+  els.paste.addEventListener('click', async () => {
+    const txt = prompt('Paste subtitle text below.\n(Format will be auto-detected.)');
+    if (txt && txt.trim()) ingestPasted(txt);
+  });
+
+  els.clear.addEventListener('click', () => {
+    state.files = [];
+    state.activeId = null;
+    render();
+  });
+
+  // ───────────────────────── controls ─────────────────────────
+  els.target.addEventListener('change', e => {
+    state.options.target = e.target.value;
+    state.files.forEach(convertOne);
+    render();
+  });
+  els.encoding.addEventListener('change', async e => {
+    state.options.encoding = e.target.value;
+    // Re-decode existing files? Only if we have the original buffer — we don't store it,
+    // but we can offer to re-add. For simplicity, only future files get the new encoding.
+    if (state.files.length) {
+      toast('Encoding applies to newly added files. Re-add to apply to existing.');
+    }
+  });
+  els.offset.addEventListener('input', e => {
+    state.options.offset = parseFloat(e.target.value) || 0;
+    state.files.forEach(convertOne);
+    render();
+  });
+  els.stripStyles.addEventListener('change', e => {
+    state.options.stripStyles = e.target.checked;
+    state.files.forEach(convertOne);
+    render();
+  });
+  els.mergeOverlap.addEventListener('change', e => {
+    state.options.mergeOverlap = e.target.checked;
+    state.files.forEach(convertOne);
+    render();
+  });
+  els.convertAll.addEventListener('click', convertAll);
+
+  // ───────────────────────── download ─────────────────────────
+  function basename(name) {
+    const i = name.lastIndexOf('.');
+    return i > 0 ? name.slice(0, i) : name;
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function downloadActive() {
+    const item = state.files.find(f => f.id === state.activeId);
+    if (!item || !item.output) return;
+    const ext = SubConv.targetExtension(state.options.target);
+    const blob = new Blob([item.output], { type: 'text/plain;charset=utf-8' });
+    downloadBlob(blob, `${basename(item.name)}.${ext}`);
+  }
+
+  function downloadAll() {
+    const ok = state.files.filter(f => f.output);
+    if (!ok.length) return;
+    const ext = SubConv.targetExtension(state.options.target);
+    if (ok.length === 1) {
+      const item = ok[0];
+      const blob = new Blob([item.output], { type: 'text/plain;charset=utf-8' });
+      downloadBlob(blob, `${basename(item.name)}.${ext}`);
+      return;
+    }
+    if (typeof JSZip === 'undefined') {
+      toast('Zip library not loaded; downloading individually.');
+      ok.forEach(f => {
+        const blob = new Blob([f.output], { type: 'text/plain;charset=utf-8' });
+        downloadBlob(blob, `${basename(f.name)}.${ext}`);
+      });
+      return;
+    }
+    const zip = new JSZip();
+    ok.forEach(f => {
+      zip.file(`${basename(f.name)}.${ext}`, f.output);
+    });
+    zip.generateAsync({ type: 'blob' }).then(blob => {
+      downloadBlob(blob, `subtitles_${ext}.zip`);
+      toast(`Zipped ${ok.length} files`);
+    });
+  }
+
+  els.download.addEventListener('click', downloadAll);
+  els.downloadOne.addEventListener('click', downloadActive);
+
+  els.copyBtn.addEventListener('click', async () => {
+    const item = state.files.find(f => f.id === state.activeId);
+    if (!item || !item.output) return;
+    try {
+      await navigator.clipboard.writeText(item.output);
+      toast('Copied to clipboard');
+    } catch (e) {
+      toast('Copy failed — your browser blocked it');
+    }
+  });
+
+  // ───────────────────────── render ─────────────────────────
+  function fileFormatLabel(fmt) {
+    return ({ srt: 'SRT', vtt: 'VTT', ass: 'ASS', ssa: 'SSA', smi: 'SMI' })[fmt] || fmt.toUpperCase();
+  }
+
+  function statusLabel(item) {
+    if (item.status === 'ok')   return { cls: 'ok',   text: '✓ Ready' };
+    if (item.status === 'warn') return { cls: 'warn', text: '! Empty' };
+    if (item.status === 'err')  return { cls: 'err',  text: '× Error' };
+    return { cls: '', text: '…' };
+  }
+
+  function renderFileList() {
+    const hasFiles = state.files.length > 0;
+    els.fileCount.textContent = state.files.length;
+    els.list.hidden = !hasFiles;
+    els.foot.hidden = !hasFiles;
+    els.drop.style.display = hasFiles ? 'none' : 'flex';
+    els.list.innerHTML = '';
+    state.files.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'file-item' + (item.id === state.activeId ? ' active' : '');
+      const stat = statusLabel(item);
+      row.innerHTML = `
+        <div class="file-icon">${fileFormatLabel(item.format)}</div>
+        <div class="file-meta">
+          <div class="file-name">${escapeHtml(item.name)}</div>
+          <div class="file-sub">
+            <span>${fileFormatLabel(item.format)}</span>
+            <span class="arrow">→</span>
+            <span>${state.options.target.toUpperCase()}</span>
+            <span class="arrow">·</span>
+            <span class="file-status ${stat.cls}">${stat.text}</span>
+          </div>
+        </div>
+        <button class="file-remove" title="Remove" aria-label="Remove">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      `;
+      row.addEventListener('click', e => {
+        if (e.target.closest('.file-remove')) return;
+        state.activeId = item.id;
+        render();
+      });
+      row.querySelector('.file-remove').addEventListener('click', e => {
+        e.stopPropagation();
+        state.files = state.files.filter(f => f.id !== item.id);
+        if (state.activeId === item.id) state.activeId = state.files[0]?.id || null;
+        render();
+      });
+      els.list.appendChild(row);
+    });
+  }
+
+  function renderEditor() {
+    const item = state.files.find(f => f.id === state.activeId);
+    const hasItem = !!item;
+
+    els.copyBtn.disabled = !hasItem || !item.output;
+    els.downloadOne.disabled = !hasItem || !item.output;
+    els.convertAll.disabled = state.files.length === 0;
+    els.download.disabled = !state.files.some(f => f.output);
+
+    if (!hasItem) {
+      els.sourceFmt.textContent = '—';
+      els.outputFmt.textContent = '—';
+      els.sourceCues.textContent = '';
+      els.sourcePane.innerHTML = emptyStateHtml('No file selected', 'Add a subtitle file to see it here.');
+      els.outputPane.innerHTML = emptyStateHtml('Output will appear here', '');
+      return;
+    }
+
+    els.sourceFmt.textContent = fileFormatLabel(item.format);
+    els.outputFmt.textContent = state.options.target.toUpperCase();
+    els.sourceCues.textContent = `${item.cuesIn} cue${item.cuesIn === 1 ? '' : 's'} · ${item.encoding}`;
+
+    // Source pane (editable)
+    els.sourcePane.innerHTML = `
+      <textarea class="code" spellcheck="false" id="sourceTextarea" aria-label="Source"></textarea>
+      <div class="pane-foot">
+        <span class="left">
+          <span class="stat"><strong>${escapeHtml(item.name)}</strong></span>
+        </span>
+        <span class="right">
+          <span class="stat">${fileFormatLabel(item.format)}</span>
+          <span class="stat">${item.encoding}</span>
+        </span>
+      </div>
+    `;
+    const sourceTa = $('#sourceTextarea');
+    sourceTa.value = item.sourceText;
+    sourceTa.addEventListener('input', () => {
+      item.sourceText = sourceTa.value;
+      // Re-detect format if it looks like the user pasted in something different?
+      // Keep current format unless drastically different — for now, keep.
+      convertOne(item);
+      renderOutputOnly();
+      renderListStatus();
+    });
+
+    renderOutputOnly();
+  }
+
+  function renderOutputOnly() {
+    const item = state.files.find(f => f.id === state.activeId);
+    if (!item) return;
+
+    if (item.status === 'err') {
+      els.outputPane.innerHTML = `
+        <div class="empty-state" style="margin:auto;color:var(--err)">
+          <svg class="icn-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <div><strong>Conversion failed</strong></div>
+          <div style="color:var(--text-3);font-size:12px">${escapeHtml(item.error || '')}</div>
+        </div>
+      `;
+      return;
+    }
+
+    els.outputPane.innerHTML = `
+      <pre class="code" id="outputPre"></pre>
+      <div class="pane-foot">
+        <span class="left">
+          <span class="stat"><strong>${escapeHtml(basename(item.name))}.${SubConv.targetExtension(state.options.target)}</strong></span>
+        </span>
+        <span class="right">
+          <span class="stat">${item.cuesOut} cue${item.cuesOut === 1 ? '' : 's'}</span>
+          ${state.options.offset ? `<span class="stat">${state.options.offset > 0 ? '+' : ''}${state.options.offset}s</span>` : ''}
+        </span>
+      </div>
+    `;
+    $('#outputPre').textContent = item.output || '(empty output)';
+  }
+
+  function renderListStatus() {
+    const item = state.files.find(f => f.id === state.activeId);
+    if (!item) return;
+    // Just update the status text on the active row, no full rerender (preserves textarea cursor)
+    const activeRow = els.list.querySelector('.file-item.active .file-status');
+    if (activeRow) {
+      const s = statusLabel(item);
+      activeRow.className = `file-status ${s.cls}`;
+      activeRow.textContent = s.text;
+    }
+  }
+
+  function emptyStateHtml(title, sub) {
+    return `
+      <div class="empty-state" style="margin:auto">
+        <svg class="icn-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        <div>${title}</div>
+        ${sub ? `<div style="color:var(--text-3);font-size:12px">${sub}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function basename(name) {
+    const i = name.lastIndexOf('.');
+    return i > 0 ? name.slice(0, i) : name;
+  }
+
+  function render() {
+    renderFileList();
+    renderEditor();
+  }
+
+  // ───────────────────────── init ─────────────────────────
+  render();
+})();
+
+</script>
+
+</body>
+</html>
