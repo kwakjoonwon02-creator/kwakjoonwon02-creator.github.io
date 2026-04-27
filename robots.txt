@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kwakjoonwon02-creator.github.io/sitemap.xml
